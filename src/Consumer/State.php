@@ -52,6 +52,16 @@ class State
      */
     private $requests = self::CLEAN_REQUEST_STATE;
 
+    /**
+     * @var ConsumerConfig
+     */
+    private $consumerConfig;
+
+    public function __construct(ConsumerConfig $consumerConfig)
+    {
+        $this->consumerConfig = $consumerConfig;
+    }
+
     public function init(): void
     {
         $this->callStatus = [
@@ -67,7 +77,7 @@ class State
         ];
 
         /** @var ConsumerConfig $config */
-        $config = ConsumerConfig::getInstance();
+        $config = $this->getConfig();
 
         foreach ($this->requests as $request => $option) {
             if ($request !== self::REQUEST_METADATA) {
@@ -380,5 +390,10 @@ class State
                 $this->callStatus[$key]['context'] = $contextStatus;
                 break;
         }
+    }
+
+    private function getConfig(): ConsumerConfig
+    {
+        return $this->consumerConfig;
     }
 }

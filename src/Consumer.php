@@ -19,13 +19,19 @@ class Consumer
     private $stopStrategy;
 
     /**
+     * @var ConsumerConfig
+     */
+    private $consumerConfig;
+
+    /**
      * @var Process|null
      */
     private $process;
 
-    public function __construct(?StopStrategy $stopStrategy = null)
+    public function __construct(?StopStrategy $stopStrategy = null, ?ConsumerConfig $consumerConfig = null)
     {
         $this->stopStrategy = $stopStrategy;
+        $this->consumerConfig = $consumerConfig ?? ConsumerConfig::getInstance();
     }
 
     /**
@@ -60,7 +66,7 @@ class Consumer
      */
     protected function createProcess(?callable $consumer): Process
     {
-        $process = new Process($consumer);
+        $process = new Process($consumer, $this->consumerConfig);
 
         if ($this->logger) {
             $process->setLogger($this->logger);

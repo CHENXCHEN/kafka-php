@@ -25,9 +25,21 @@ class SyncProcess
     /** @var RecordValidator */
     private $recordValidator;
 
-    public function __construct(?RecordValidator $recordValidator = null)
+    /**
+     * @var ProducerConfig
+     */
+    private $producerConfig;
+
+    /**
+     * @var Broker
+     */
+    private $broker;
+
+    public function __construct(?RecordValidator $recordValidator = null, ?ProducerConfig $producerConfig = null)
     {
         $this->recordValidator = $recordValidator ?? new RecordValidator();
+        $this->producerConfig = $producerConfig ?? ProducerConfig::getInstance();
+        $this->broker = new Broker();
 
         $config = $this->getConfig();
         \Kafka\Protocol::init($config->getBrokerVersion(), $this->logger);
@@ -101,7 +113,7 @@ class SyncProcess
     {
         $this->debug('Start sync metadata request');
 
-        $brokerList = ProducerConfig::getInstance()->getMetadataBrokerList();
+        $brokerList = $this->getConfig()->getMetadataBrokerList();
         $brokerHost = [];
 
         foreach (explode(',', $brokerList) as $key => $val) {
@@ -196,11 +208,14 @@ class SyncProcess
 
     private function getBroker(): Broker
     {
-        return Broker::getInstance();
+        return $this->broker;
     }
 
-    private function getConfig(): ProducerConfig
+    /**
+     * @return ProducerConfig
+     */
+    private function getConfig()
     {
-        return ProducerConfig::getInstance();
+        return $this->producerConfig;
     }
 }

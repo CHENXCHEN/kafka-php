@@ -61,6 +61,16 @@ class Assignment
      */
     private $preCommitOffsets = [];
 
+    /**
+     * @var Broker
+     */
+    private $broker;
+
+    public function __construct(Broker $broker)
+    {
+        $this->broker = $broker;
+    }
+
     public function setMemberId(string $memberId): void
     {
         $this->memberId = $memberId;
@@ -95,7 +105,7 @@ class Assignment
     public function assign(array $result): void
     {
         /** @var Broker $broker */
-        $broker = Broker::getInstance();
+        $broker = $this->getBroker();
         $topics = $broker->getTopics();
 
         $memberCount = count($result);
@@ -283,5 +293,10 @@ class Assignment
         $this->consumerOffsets  = [];
         $this->commitOffsets    = [];
         $this->preCommitOffsets = [];
+    }
+
+    private function getBroker() : Broker
+    {
+        return $this->broker;
     }
 }

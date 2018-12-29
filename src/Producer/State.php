@@ -37,6 +37,16 @@ class State
         self::REQUEST_PRODUCE => [],
     ];
 
+    /**
+     * @var ProducerConfig
+     */
+    private $producerConfig;
+
+    public function __construct(ProducerConfig $producerConfig)
+    {
+        $this->producerConfig = $producerConfig;
+    }
+
     public function init(): void
     {
         $this->callStatus = [
@@ -239,6 +249,6 @@ class State
 
     private function getConfig(): ProducerConfig
     {
-        return ProducerConfig::getInstance();
+        return $this->producerConfig;
     }
 }

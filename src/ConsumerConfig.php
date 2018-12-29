@@ -14,6 +14,8 @@ use function trim;
  * @method string getOffsetReset()
  * @method int getMaxBytes()
  * @method int getMaxWaitTime()
+ * @method int getIsBatchExecute()
+ * @method int setIsBatchExecute(bool $isBatchExecute)
  */
 class ConsumerConfig extends Config
 {
@@ -32,7 +34,7 @@ class ConsumerConfig extends Config
     /**
      * @var mixed[]
      */
-    protected static $defaults = [
+    protected $extDefaults = [
         'groupId'          => '',
         'sessionTimeout'   => 30000,
         'rebalanceTimeout' => 30000,
@@ -40,7 +42,13 @@ class ConsumerConfig extends Config
         'offsetReset'      => 'latest', // earliest
         'maxBytes'         => 65536, // 64kb
         'maxWaitTime'      => 100,
+        'isBatchExecute'   => false,
     ];
+
+    public function __construct()
+    {
+        parent::__construct();
+    }
 
     /**
      * @throws \Kafka\Exception\Config
@@ -67,7 +75,7 @@ class ConsumerConfig extends Config
             throw new Exception\Config('Set group id value is invalid, must set it not empty string');
         }
 
-        static::$options['groupId'] = $groupId;
+        $this->options['groupId'] = $groupId;
     }
 
     /**
@@ -79,7 +87,7 @@ class ConsumerConfig extends Config
             throw new Exception\Config('Set session timeout value is invalid, must set it 1 .. 3600000');
         }
 
-        static::$options['sessionTimeout'] = $sessionTimeout;
+        $this->options['sessionTimeout'] = $sessionTimeout;
     }
 
     /**
@@ -91,7 +99,7 @@ class ConsumerConfig extends Config
             throw new Exception\Config('Set rebalance timeout value is invalid, must set it 1 .. 3600000');
         }
 
-        static::$options['rebalanceTimeout'] = $rebalanceTimeout;
+        $this->options['rebalanceTimeout'] = $rebalanceTimeout;
     }
 
     /**
@@ -103,7 +111,7 @@ class ConsumerConfig extends Config
             throw new Exception\Config('Set offset reset value is invalid, must set it `latest` or `earliest`');
         }
 
-        static::$options['offsetReset'] = $offsetReset;
+        $this->options['offsetReset'] = $offsetReset;
     }
 
     /**
@@ -133,7 +141,7 @@ class ConsumerConfig extends Config
             throw new Exception\Config('Set consumer topics value is invalid, must set it not empty array');
         }
 
-        static::$options['topics'] = $topics;
+        $this->options['topics'] = $topics;
     }
 
     public function setConsumeMode(int $mode): void

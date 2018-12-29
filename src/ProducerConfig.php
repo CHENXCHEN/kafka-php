@@ -27,7 +27,7 @@ class ProducerConfig extends Config
     /**
      * @var mixed[]
      */
-    protected static $defaults = [
+    protected $extDefaults = [
         'requiredAck'     => 1,
         'timeout'         => 5000,
         'isAsyn'          => false,
@@ -35,6 +35,11 @@ class ProducerConfig extends Config
         'produceInterval' => 100,
         'compression'     => Protocol\Protocol::COMPRESSION_NONE,
     ];
+
+    public function __construct()
+    {
+        parent::__construct();
+    }
 
     /**
      * @throws \Kafka\Exception\Config
@@ -45,7 +50,7 @@ class ProducerConfig extends Config
             throw new Exception\Config('Set request timeout value is invalid, must set it 1 .. 900000');
         }
 
-        static::$options['requestTimeout'] = $requestTimeout;
+        $this->options['requestTimeout'] = $requestTimeout;
     }
 
     /**
@@ -57,7 +62,7 @@ class ProducerConfig extends Config
             throw new Exception\Config('Set produce interval timeout value is invalid, must set it 1 .. 900000');
         }
 
-        static::$options['produceInterval'] = $produceInterval;
+        $this->options['produceInterval'] = $produceInterval;
     }
 
     /**
@@ -69,7 +74,7 @@ class ProducerConfig extends Config
             throw new Exception\Config('Set timeout value is invalid, must set it 1 .. 900000');
         }
 
-        static::$options['timeout'] = $timeout;
+        $this->options['timeout'] = $timeout;
     }
 
     /**
@@ -81,12 +86,12 @@ class ProducerConfig extends Config
             throw new Exception\Config('Set required ack value is invalid, must set it -1 .. 1000');
         }
 
-        static::$options['requiredAck'] = $requiredAck;
+        $this->options['requiredAck'] = $requiredAck;
     }
 
     public function setIsAsyn(bool $asyn): void
     {
-        static::$options['isAsyn'] = $asyn;
+        $this->options['isAsyn'] = $asyn;
     }
 
     public function setCompression(int $compression): void
@@ -95,6 +100,6 @@ class ProducerConfig extends Config
             throw new Exception\Config('Compression must be one the Kafka\Protocol\Produce::COMPRESSION_* constants');
         }
 
-        static::$options['compression'] = $compression;
+        $this->options['compression'] = $compression;
     }
 }

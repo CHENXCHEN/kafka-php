@@ -19,9 +19,15 @@ class Producer
      */
     private $process;
 
-    public function __construct(?callable $producer = null)
+    /**
+     * @var ProducerConfig
+     */
+    private $producerConfig;
+
+    public function __construct(?callable $producer = null, ?ProducerConfig $producerConfig = null)
     {
-        $this->process = $producer === null ? new SyncProcess() : new Process($producer);
+        $this->producerConfig = $producerConfig ?: ProducerConfig::getInstance();
+        $this->process = $producer === null ? new SyncProcess(null, $producerConfig) : new Process($producer, null, $producerConfig);
     }
 
     /**

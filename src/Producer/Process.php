@@ -50,11 +50,25 @@ class Process
      */
     private $state;
 
+    /**
+     * @var ProducerConfig
+     */
+    private $producerConfig;
+
+    /**
+     * @var Broker
+     */
+    private $broker;
+
     /** @var RecordValidator */
     private $recordValidator;
 
-    public function __construct(?callable $producer = null, ?RecordValidator $recordValidator = null)
+    public function __construct(?callable $producer = null, ?RecordValidator $recordValidator = null,
+                                ?ProducerConfig $producerConfig = null)
     {
+        $this->producerConfig = $producerConfig ?? ProducerConfig::getInstance();
+        $this->state = new State($this->producerConfig);
+        $this->broker = new Broker();
         $this->producer        = $producer;
         $this->recordValidator = $recordValidator ?? new RecordValidator();
     }
@@ -72,30 +86,28 @@ class Process
             }
         );
 
-        $this->state = State::getInstance();
-
         if ($this->logger) {
-            $this->state->setLogger($this->logger);
+            $this->getStat()->setLogger($this->logger);
         }
 
-        $this->state->setCallback(
+        $this->getStat()->setCallback(
             [
                 State::REQUEST_METADATA => [$this, 'syncMeta'],
                 State::REQUEST_PRODUCE  => [$this, 'produce'],
             ]
         );
 
-        $this->state->init();
+        $this->getStat()->init();
 
         if (! empty($broker->getTopics())) {
-            $this->state->succRun(State::REQUEST_METADATA);
+            $this->getStat()->succRun(State::REQUEST_METADATA);
         }
     }
 
     public function start(): void
     {
         $this->init();
-        $this->state->start();
+        $this->getStat()->start();
 
         $config = $this->getConfig();
 
@@ -138,7 +150,7 @@ class Process
     {
         $this->debug('Start sync metadata request');
 
-        $brokerList = ProducerConfig::getInstance()->getMetadataBrokerList();
+        $brokerList = $this->getConfig()->getMetadataBrokerList();
         $brokerHost = [];
 
         foreach (explode(',', $brokerList) as $key => $val) {
@@ -184,13 +196,13 @@ class Process
 
                 if (! isset($result['brokers'], $result['topics'])) {
                     $this->error('Get metadata is fail, brokers or topics is null.');
-                    $this->state->failRun(State::REQUEST_METADATA);
+                    $this->getStat()->failRun(State::REQUEST_METADATA);
                     break;
                 }
 
                 $broker   = $this->getBroker();
                 $isChange = $broker->setData($result['topics'], $result['brokers']);
-                $this->state->succRun(State::REQUEST_METADATA, $isChange);
+                $this->getStat()->succRun(State::REQUEST_METADATA, $isChange);
 
                 break;
             case Protocol::PRODUCE_REQUEST:
@@ -247,7 +259,7 @@ class Process
             $requestData = Protocol::encode(Protocol::PRODUCE_REQUEST, $params);
 
             if ($requiredAck === 0) { // If it is 0 the server will not send any response
-                $this->state->succRun(State::REQUEST_PRODUCE);
+                $this->getStat()->succRun(State::REQUEST_PRODUCE);
             } else {
                 $connect->write($requestData);
                 $context[] = (int) $connect->getSocket();
@@ -269,7 +281,7 @@ class Process
             ($this->success)($result);
         }
 
-        $this->state->succRun(State::REQUEST_PRODUCE, $fd);
+        $this->getStat()->succRun(State::REQUEST_PRODUCE, $fd);
     }
 
     protected function stateConvert(int $errorCode): bool
@@ -297,7 +309,7 @@ class Process
         ];
 
         if (in_array($errorCode, $recoverCodes, true)) {
-            $this->state->recover();
+            $this->getStat()->recover();
 
             return false;
         }
@@ -351,13 +363,21 @@ class Process
         return $sendData;
     }
 
-    private function getConfig(): ProducerConfig
+    /**
+     * @return ProducerConfig
+     */
+    private function getConfig()
     {
-        return ProducerConfig::getInstance();
+        return $this->producerConfig;
     }
 
     private function getBroker(): Broker
     {
-        return Broker::getInstance();
+        return $this->broker;
+    }
+
+    private function getStat(): State
+    {
+        return $this->state;
     }
 }

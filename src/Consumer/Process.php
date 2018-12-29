@@ -36,13 +36,32 @@ class Process
     protected $messages = [];
 
     /**
+     * @var ConsumerConfig
+     */
+    protected $consumerConfig;
+
+    /**
+     * @var Broker
+     */
+    private $broker;
+
+    /**
+     * @var Assignment
+     */
+    private $assignment;
+
+    /**
      * @var State
      */
     private $state;
 
-    public function __construct(?callable $consumer = null)
+    public function __construct(?callable $consumer = null, ?ConsumerConfig $consumerConfig = null)
     {
         $this->consumer = $consumer;
+        $this->consumerConfig = $consumerConfig ?? ConsumerConfig::getInstance();
+        $this->state = new State($consumerConfig);
+        $this->broker = new Broker();
+        $this->assignment = new Assignment($this->broker);
     }
 
     public function init(): void
@@ -56,12 +75,10 @@ class Process
             $this->processRequest($data, $fd);
         });
 
-        $this->state = State::getInstance();
-
         if ($this->logger) {
-            $this->state->setLogger($this->logger);
+            $this->getState()->setLogger($this->logger);
         }
-        $this->state->setCallback(
+        $this->getState()->setCallback(
             [
                 State::REQUEST_METADATA      => function (): void {
                     $this->syncMeta();
@@ -92,20 +109,20 @@ class Process
                 },
             ]
         );
-        $this->state->init();
+        $this->getState()->init();
     }
 
     public function start(): void
     {
         $this->init();
-        $this->state->start();
+        $this->getState()->start();
     }
 
     public function stop(): void
     {
         // TODO: we should remove the consumer from the group here
 
-        $this->state->stop();
+        $this->getState()->stop();
     }
 
     /**
@@ -121,21 +138,21 @@ class Process
 
                 if (! isset($result['brokers'], $result['topics'])) {
                     $this->error('Get metadata is fail, brokers or topics is null.');
-                    $this->state->failRun(State::REQUEST_METADATA);
+                    $this->getState()->failRun(State::REQUEST_METADATA);
                     break;
                 }
 
                 /** @var Broker $broker */
                 $broker   = $this->getBroker();
                 $isChange = $broker->setData($result['topics'], $result['brokers']);
-                $this->state->succRun(State::REQUEST_METADATA, $isChange);
+                $this->getState()->succRun(State::REQUEST_METADATA, $isChange);
 
                 break;
             case Protocol::GROUP_COORDINATOR_REQUEST:
                 $result = Protocol::decode(Protocol::GROUP_COORDINATOR_REQUEST, substr($data, 4));
 
                 if (! isset($result['errorCode'], $result['coordinatorId']) || $result['errorCode'] !== Protocol::NO_ERROR) {
-                    $this->state->failRun(State::REQUEST_GETGROUP);
+                    $this->getState()->failRun(State::REQUEST_GETGROUP);
                     break;
                 }
 
@@ -143,7 +160,7 @@ class Process
                 $broker = $this->getBroker();
                 $broker->setGroupBrokerId($result['coordinatorId']);
 
-                $this->state->succRun(State::REQUEST_GETGROUP);
+                $this->getState()->succRun(State::REQUEST_GETGROUP);
 
                 break;
             case Protocol::JOIN_GROUP_REQUEST:
@@ -167,7 +184,7 @@ class Process
             case Protocol::HEART_BEAT_REQUEST:
                 $result = Protocol::decode(Protocol::HEART_BEAT_REQUEST, substr($data, 4));
                 if (isset($result['errorCode']) && $result['errorCode'] === Protocol::NO_ERROR) {
-                    $this->state->succRun(State::REQUEST_HEARTGROUP);
+                    $this->getState()->succRun(State::REQUEST_HEARTGROUP);
                     break;
                 }
 
@@ -299,7 +316,7 @@ class Process
      */
     public function succJoinGroup(array $result): void
     {
-        $this->state->succRun(State::REQUEST_JOINGROUP);
+        $this->getState()->succRun(State::REQUEST_JOINGROUP);
         $assign = $this->getAssignment();
         $assign->setMemberId($result['memberId']);
         $assign->setGenerationId($result['generationId']);
@@ -350,7 +367,7 @@ class Process
     public function succSyncGroup(array $result): void
     {
         $this->debug(sprintf('Sync group sucess, params: %s', json_encode($result)));
-        $this->state->succRun(State::REQUEST_SYNCGROUP);
+        $this->getState()->succRun(State::REQUEST_SYNCGROUP);
 
         $topics = $this->getBroker()->getTopics();
 
@@ -482,7 +499,7 @@ class Process
 
         $this->getAssignment()->setOffsets($offsets);
         $this->getAssignment()->setLastOffsets($lastOffsets);
-        $this->state->succRun(State::REQUEST_OFFSET, $fd);
+        $this->getState()->succRun(State::REQUEST_OFFSET, $fd);
     }
 
     protected function fetchOffset(): void
@@ -566,7 +583,7 @@ class Process
             $assign->setCommitOffsets($assign->getFetchOffsets());
         }
 
-        $this->state->succRun(State::REQUEST_FETCH_OFFSET);
+        $this->getState()->succRun(State::REQUEST_FETCH_OFFSET);
     }
 
     /**
@@ -660,16 +677,22 @@ class Process
             }
         }
 
-        $this->state->succRun(State::REQUEST_FETCH, $fd);
+        $this->getState()->succRun(State::REQUEST_FETCH, $fd);
     }
 
     protected function consumeMessage(): void
     {
-        foreach ($this->messages as $topic => $value) {
-            foreach ($value as $partition => $messages) {
-                foreach ($messages as $message) {
-                    if ($this->consumer !== null) {
-                        ($this->consumer)($topic, $partition, $message);
+        if ($this->getConfig()->getIsBatchExecute()) {
+            if (!empty($this->messages) && $this->consumer !== null) {
+                ($this->consumer)($this->messages);
+            }
+        } else {
+            foreach ($this->messages as $topic => $value) {
+                foreach ($value as $partition => $messages) {
+                    foreach ($messages as $message) {
+                        if ($this->consumer !== null) {
+                            ($this->consumer)($topic, $partition, $message);
+                        }
                     }
                 }
             }
@@ -739,7 +762,7 @@ class Process
     public function succCommit(array $result): void
     {
         $this->debug('Commit success, result:' . json_encode($result));
-        $this->state->succRun(State::REQUEST_COMMIT_OFFSET);
+        $this->getState()->succRun(State::REQUEST_COMMIT_OFFSET);
 
         foreach ($result as $topic) {
             foreach ($topic['partitions'] as $part) {
@@ -784,7 +807,7 @@ class Process
         $assign = $this->getAssignment();
 
         if (in_array($errorCode, $recoverCodes, true)) {
-            $this->state->recover();
+            $this->getState()->recover();
             $assign->clearOffset();
             return false;
         }
@@ -795,7 +818,7 @@ class Process
             }
 
             $assign->clearOffset();
-            $this->state->rejoin();
+            $this->getState()->rejoin();
             return false;
         }
 
@@ -815,16 +838,21 @@ class Process
 
     private function getBroker(): Broker
     {
-        return Broker::getInstance();
+        return $this->broker;
     }
 
     private function getConfig(): ConsumerConfig
     {
-        return ConsumerConfig::getInstance();
+        return $this->consumerConfig;
     }
 
     private function getAssignment(): Assignment
     {
-        return Assignment::getInstance();
+        return $this->assignment;
+    }
+
+    private function getState(): State
+    {
+        return $this->state;
     }
 }
