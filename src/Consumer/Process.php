@@ -575,6 +575,9 @@ class Process
                 foreach ($value as $partId => $offset) {
                     if (isset($lastOffsets[$topic][$partId]) && $lastOffsets[$topic][$partId] > $offset) {
                         $consumerOffsets[$topic][$partId] = $offset;
+                        if ($consumerOffsets[$topic][$partId] < 0) {
+                            $consumerOffsets[$topic][$partId] = 0;
+                        }
                     }
                 }
             }
