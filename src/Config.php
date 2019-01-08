@@ -110,6 +110,7 @@ abstract class Config
     }
 
     /**
+     * @param string $name
      * @param mixed[] $args
      *
      * @return bool|mixed
@@ -148,6 +149,7 @@ abstract class Config
     }
 
     /**
+     * @param string $val
      * @throws Exception\Config
      */
     public function setClientId(string $val): void
@@ -162,6 +164,7 @@ abstract class Config
     }
 
     /**
+     * @param string $version
      * @throws Exception\Config
      */
     public function setBrokerVersion(string $version): void
@@ -176,6 +179,7 @@ abstract class Config
     }
 
     /**
+     * @param string $brokerList
      * @throws Exception\Config
      */
     public function setMetadataBrokerList(string $brokerList): void
@@ -204,6 +208,7 @@ abstract class Config
     }
 
     /**
+     * @param int $messageMaxBytes
      * @throws Exception\Config
      */
     public function setMessageMaxBytes(int $messageMaxBytes): void
@@ -215,6 +220,7 @@ abstract class Config
     }
 
     /**
+     * @param int $metadataRequestTimeoutMs
      * @throws Exception\Config
      */
     public function setMetadataRequestTimeoutMs(int $metadataRequestTimeoutMs): void
@@ -226,6 +232,7 @@ abstract class Config
     }
 
     /**
+     * @param int $metadataRefreshIntervalMs
      * @throws Exception\Config
      */
     public function setMetadataRefreshIntervalMs(int $metadataRefreshIntervalMs): void
@@ -237,6 +244,7 @@ abstract class Config
     }
 
     /**
+     * @param int $metadataMaxAgeMs
      * @throws Exception\Config
      */
     public function setMetadataMaxAgeMs(int $metadataMaxAgeMs): void
@@ -248,6 +256,7 @@ abstract class Config
     }
 
     /**
+     * @param string $localCert
      * @throws Exception\Config
      */
     public function setSslLocalCert(string $localCert): void
@@ -260,6 +269,7 @@ abstract class Config
     }
 
     /**
+     * @param string $localPk
      * @throws Exception\Config
      */
     public function setSslLocalPk(string $localPk): void
@@ -272,6 +282,7 @@ abstract class Config
     }
 
     /**
+     * @param string $cafile
      * @throws Exception\Config
      */
     public function setSslCafile(string $cafile): void
@@ -284,6 +295,7 @@ abstract class Config
     }
 
     /**
+     * @param string $keytab
      * @throws Exception\Config
      */
     public function setSaslKeytab(string $keytab): void
@@ -296,6 +308,7 @@ abstract class Config
     }
 
     /**
+     * @param string $protocol
      * @throws Exception\Config
      */
     public function setSecurityProtocol(string $protocol): void
@@ -308,6 +321,7 @@ abstract class Config
     }
 
     /**
+     * @param  string $mechanism
      * @throws Exception\Config
      */
     public function setSaslMechanism(string $mechanism): void

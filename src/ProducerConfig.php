@@ -42,6 +42,7 @@ class ProducerConfig extends Config
     }
 
     /**
+     * @param int $requestTimeout
      * @throws \Kafka\Exception\Config
      */
     public function setRequestTimeout(int $requestTimeout): void
@@ -54,6 +55,7 @@ class ProducerConfig extends Config
     }
 
     /**
+     * @param int $produceInterval
      * @throws \Kafka\Exception\Config
      */
     public function setProduceInterval(int $produceInterval): void
@@ -66,6 +68,7 @@ class ProducerConfig extends Config
     }
 
     /**
+     * @param int $timeout
      * @throws \Kafka\Exception\Config
      */
     public function setTimeout(int $timeout): void
@@ -78,6 +81,7 @@ class ProducerConfig extends Config
     }
 
     /**
+     * @param int $requiredAck
      * @throws \Kafka\Exception\Config
      */
     public function setRequiredAck(int $requiredAck): void
@@ -89,11 +93,17 @@ class ProducerConfig extends Config
         $this->options['requiredAck'] = $requiredAck;
     }
 
+    /**
+     * @param bool $asyn
+     */
     public function setIsAsyn(bool $asyn): void
     {
         $this->options['isAsyn'] = $asyn;
     }
 
+    /**
+     * @param int $compression
+     */
     public function setCompression(int $compression): void
     {
         if (! in_array($compression, self::COMPRESSION_OPTIONS, true)) {

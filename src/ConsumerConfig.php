@@ -65,6 +65,7 @@ class ConsumerConfig extends Config
     }
 
     /**
+     * @param string $groupId
      * @throws \Kafka\Exception\Config
      */
     public function setGroupId(string $groupId): void
@@ -79,6 +80,7 @@ class ConsumerConfig extends Config
     }
 
     /**
+     * @param int $sessionTimeout
      * @throws \Kafka\Exception\Config
      */
     public function setSessionTimeout(int $sessionTimeout): void
@@ -91,6 +93,7 @@ class ConsumerConfig extends Config
     }
 
     /**
+     * @param int $rebalanceTimeout
      * @throws \Kafka\Exception\Config
      */
     public function setRebalanceTimeout(int $rebalanceTimeout): void
@@ -103,6 +106,7 @@ class ConsumerConfig extends Config
     }
 
     /**
+     * @param string $offsetReset
      * @throws \Kafka\Exception\Config
      */
     public function setOffsetReset(string $offsetReset): void
@@ -144,6 +148,10 @@ class ConsumerConfig extends Config
         $this->options['topics'] = $topics;
     }
 
+    /**
+     * @param int $mode
+     * @throws \Kafka\Exception\Config
+     */
     public function setConsumeMode(int $mode): void
     {
         if (! in_array($mode, [self::CONSUME_AFTER_COMMIT_OFFSET, self::CONSUME_BEFORE_COMMIT_OFFSET], true)) {
@@ -156,6 +164,9 @@ class ConsumerConfig extends Config
         $this->runtimeOptions['consume_mode'] = $mode;
     }
 
+    /**
+     * @return int
+     */
     public function getConsumeMode(): int
     {
         return $this->runtimeOptions['consume_mode'];
